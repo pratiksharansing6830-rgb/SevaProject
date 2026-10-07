@@ -300,6 +300,7 @@ class ServiceContinuityOut(ORMModel):
     migration_id: UUID | None
     service_type: ServiceType
     status: ContinuityStatus
+    reason: str | None
     action_required: bool
     assigned_role: str | None
     due_date: date | None

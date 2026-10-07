@@ -198,6 +198,31 @@ def test_all_connected_services_return_connected_summary(client):
     assert summary['follow_up_count'] == 0
 
 
+def test_continuity_reasons_are_present_and_migration_updates_family_location(client):
+    headers, _ = register_user(client)
+    family = create_family(client, headers)
+    child = create_child(client, headers, family['id'])
+    client.post(f"/api/v1/children/{child['id']}/education", headers=headers, json={
+        'enrollment_status': 'PENDING', 'transfer_status': 'PENDING',
+    })
+    summary = client.get(f"/api/v1/children/{child['id']}/continuity", headers=headers).json()
+    education = next(record for record in summary['services'] if record['service_type'] == 'EDUCATION')
+    assert education['reason']
+    assert education['action_required'] is True
+
+    migration = client.post(f"/api/v1/families/{family['id']}/migrations", headers=headers, json={
+        'from_district': 'Nashik', 'from_taluka': 'Nashik', 'from_location': 'Nashik City',
+        'to_district': 'Pune', 'to_taluka': 'Haveli', 'to_location': 'Pune City',
+        'migration_date': '2026-10-07', 'status': 'ACTIVE',
+    }).json()
+    completed = client.put(f"/api/v1/migrations/{migration['id']}", headers=headers, json={'status': 'COMPLETED'})
+    assert completed.status_code == 200, completed.text
+    family_details = client.get(f"/api/v1/families/{family['id']}", headers=headers).json()
+    assert family_details['current_district'] == 'Pune'
+    assert family_details['current_taluka'] == 'Haveli'
+    assert family_details['current_village_or_city'] == 'Pune City'
+
+
 def test_followup_can_be_created_and_updated(client):
     headers, _ = register_user(client)
     family = create_family(client, headers)

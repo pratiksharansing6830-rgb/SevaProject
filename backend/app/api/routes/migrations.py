@@ -65,8 +65,15 @@ def update_migration(
     if migration is None:
         raise HTTPException(status_code=404, detail='Migration not found.')
     ensure_family_access(db, current_user, migration.family_id, ('CITIZEN', 'NGO_WORKER', 'ADMIN'), allow_grant=False)
+    was_completed = migration.status == 'COMPLETED'
     for key, value in payload.model_dump(exclude_unset=True).items():
         setattr(migration, key, value)
+    if migration.status == 'COMPLETED' and not was_completed:
+        family = db.get(Family, migration.family_id)
+        if family is not None:
+            family.current_district = migration.to_district
+            family.current_taluka = migration.to_taluka
+            family.current_village_or_city = migration.to_location
     db.commit()
     db.refresh(migration)
     return migration

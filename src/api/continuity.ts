@@ -48,6 +48,7 @@ export type ServiceContinuity = {
   migration_id: string | null
   service_type: ServiceType
   status: ServiceStatus
+  reason: string | null
   action_required: boolean
   assigned_role: string | null
   due_date: string | null

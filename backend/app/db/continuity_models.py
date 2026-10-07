@@ -266,6 +266,7 @@ class ServiceContinuityRecord(TimestampMixin, Base):
     migration_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('migration_records.id', ondelete='RESTRICT'))
     service_type: Mapped[str] = mapped_column(String(30), nullable=False)
     status: Mapped[str] = mapped_column(String(30), nullable=False)
+    reason: Mapped[str | None] = mapped_column(Text)
     action_required: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     assigned_role: Mapped[str | None] = mapped_column(String(30))
     due_date: Mapped[date | None] = mapped_column(Date)

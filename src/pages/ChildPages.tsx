@@ -186,7 +186,13 @@ export function ContinuityPage() {
       <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center"><div><p className="text-sm text-slate-500">Overall status</p><h2 className="mt-1 text-2xl font-semibold text-slate-900">{statusText[summary.overall_status]}</h2></div><StatusPill status={summary.overall_status} /></div>
       <div className="mt-5 divide-y divide-slate-100 border-y border-slate-100">{services.map((service) => {
         const record = summary.services.find((item) => item.service_type === service.type)
-        return <div key={service.type} className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between"><div className="flex items-center gap-3"><StatusIcon status={record?.status || 'PENDING'} /><div><p className="font-medium text-slate-900">{service.label}</p>{record?.due_date && <p className="mt-0.5 text-xs text-slate-500">Follow-up due {record.due_date}</p>}</div></div><div className="flex items-center gap-4"><span className="text-sm text-slate-600">{statusText[record?.status || 'PENDING']}</span><Link to={`/children/${child.id}/${service.slug}`} className="text-sm font-semibold text-teal-800 hover:underline">Update</Link></div></div>
+        return <div key={service.type} className="flex flex-col gap-3 py-4">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center gap-3"><StatusIcon status={record?.status || 'PENDING'} /><div><p className="font-medium text-slate-900">{service.label}</p>{record?.due_date && <p className="mt-0.5 text-xs text-slate-500">Follow-up due {record.due_date}</p>}</div></div>
+            <div className="flex items-center gap-4"><span className="text-sm text-slate-600">{statusText[record?.status || 'PENDING']}</span><Link to={`/children/${child.id}/${service.slug}`} className="text-sm font-semibold text-teal-800 hover:underline">Update</Link></div>
+          </div>
+          {record?.reason && <p className="text-sm text-slate-600">{record.reason}</p>}
+        </div>
       })}</div>
       <p className="mt-4 text-sm text-slate-600">{activeFollowups.length} services require follow-up.</p>
     </section>

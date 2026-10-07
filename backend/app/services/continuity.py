@@ -26,6 +26,36 @@ SERVICE_ROLES = {
 }
 
 
+def _service_reason(service_type: str, service_status: str) -> str:
+    if service_type == 'EDUCATION':
+        if service_status == 'CONNECTED':
+            return 'Education continuity is connected and no action is required.'
+        if service_status == 'REVIEW_REQUIRED':
+            return 'Education continuity needs review because enrollment or transfer is unresolved.'
+        return 'Education continuity requires action because enrollment or transfer is still pending.'
+    if service_type == 'HEALTHCARE':
+        if service_status == 'CONNECTED':
+            return 'Healthcare continuity is connected and no action is required.'
+        return 'Healthcare continuity requires a follow-up with the health provider.'
+    if service_type == 'NUTRITION':
+        if service_status == 'CONNECTED':
+            return 'Nutrition support is connected and no action is required.'
+        return 'Nutrition support needs a follow-up because the service connection is not yet confirmed.'
+    if service_type == 'PROTECTION':
+        if service_status == 'CONNECTED':
+            return 'Protection support is connected and no action is required.'
+        if service_status == 'REVIEW_REQUIRED':
+            return 'Protection follow-up is required because the case needs a safeguarding review.'
+        return 'Protection support requires action because the safety plan is not yet confirmed.'
+    if service_type == 'WELLBEING':
+        if service_status == 'CONNECTED':
+            return 'Wellbeing support is connected and no action is required.'
+        return 'Wellbeing support requires review because the child’s support plan is not yet confirmed.'
+    if service_status == 'CONNECTED':
+        return 'Inclusion support is connected and no action is required.'
+    return 'Inclusion support requires action because the required adjustment remains unresolved.'
+
+
 def _service_status(child: Child, service_type: str) -> str:
     if service_type == 'EDUCATION':
         record = child.education
@@ -85,11 +115,14 @@ def refresh_child_continuity(
         service_status = _service_status(child, service_type)
         action_required = service_status != 'CONNECTED'
         if not record:
+            reason = _service_reason(service_type, service_status)
+        if not record:
             record = ServiceContinuityRecord(
                 child_id=child.id,
                 migration_id=migration.id if migration else None,
                 service_type=service_type,
                 status=service_status,
+                reason=reason,
                 action_required=action_required,
                 assigned_role=SERVICE_ROLES[service_type] if action_required else None,
                 due_date=date.today() + timedelta(days=7) if action_required else None,
@@ -98,6 +131,7 @@ def refresh_child_continuity(
             db.flush()
         else:
             record.status = service_status
+            record.reason = reason
             record.action_required = action_required
             record.assigned_role = SERVICE_ROLES[service_type] if action_required else None
 
@@ -117,7 +151,7 @@ def refresh_child_continuity(
                         child_id=child.id,
                         service_continuity_id=record.id,
                         title=f'{service_type.replace("_", " ").title()} continuity follow-up',
-                        description='Review this service connection with the family and record the outcome.',
+                        description=record.reason or 'Review this service connection with the family and record the outcome.',
                         status='OPEN',
                         priority='MEDIUM',
                         due_date=record.due_date or date.today() + timedelta(days=7),
