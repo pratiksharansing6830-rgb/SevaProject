@@ -1,16 +1,19 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { LocateFixed, Search } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import {
   DISCOVERY_SERVICE_TYPES,
   formatLabel,
   getNearbyServices,
+  isDemoOrganization,
+  verificationLabel,
   type DiscoveryServiceType,
   type NearbyQuery,
   type NearbyService,
 } from '../api/services'
 import { ServiceMap } from '../components/ServiceMap'
+import { findPlaceCentre } from '../data/placeCentres'
 
 type AppliedQuery = NearbyQuery & { radius: number }
 
@@ -67,14 +70,52 @@ function buildQuery(form: FormState): { query?: AppliedQuery; error?: string } {
   }
 }
 
+/** Reads ?service_type=...&place=... (set by the continuity "Find Nearby" buttons). */
+function initialFromParams(params: URLSearchParams): { form: FormState; notice: string } {
+  const form: FormState = { ...INITIAL_FORM }
+  let notice = ''
+
+  const typeParam = params.get('service_type')
+  if (typeParam && (DISCOVERY_SERVICE_TYPES as readonly string[]).includes(typeParam)) {
+    form.service_type = typeParam as DiscoveryServiceType
+  }
+
+  const placeParam = params.get('place')
+  if (placeParam) {
+    const centre = findPlaceCentre(placeParam)
+    if (centre) {
+      form.latitude = String(centre.latitude)
+      form.longitude = String(centre.longitude)
+      notice = `Searching around the centre of ${centre.name}. You can change the location below.`
+    } else {
+      notice = `We could not find a search point for "${placeParam}". Please enter a location or use your location.`
+    }
+  } else if (typeParam) {
+    notice =
+      'No destination location was available. Results are shown around a default search point. Please enter a location or use your location.'
+  }
+  return { form, notice }
+}
+
 function locationLine(service: NearbyService) {
   return [service.city_or_village, service.taluka, service.district].filter(Boolean).join(', ') || 'Location not listed'
 }
 
+function Detail({ label, value }: { label: string; value: string | null | undefined }) {
+  return (
+    <div>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-slate-500">{label}</dt>
+      <dd className="mt-1 text-slate-800">{value && value.trim() ? value : 'Not listed'}</dd>
+    </div>
+  )
+}
+
 export default function MapPage() {
   const { token } = useAuth()
-  const [form, setForm] = useState<FormState>(INITIAL_FORM)
-  const [applied, setApplied] = useState<AppliedQuery>(() => buildQuery(INITIAL_FORM).query as AppliedQuery)
+  const [searchParams] = useSearchParams()
+  const [initial] = useState(() => initialFromParams(searchParams))
+  const [form, setForm] = useState<FormState>(initial.form)
+  const [applied, setApplied] = useState<AppliedQuery>(() => buildQuery(initial.form).query as AppliedQuery)
   const [services, setServices] = useState<NearbyService[]>([])
   const [status, setStatus] = useState<Status>('loading')
   const [selectedId, setSelectedId] = useState<string | null>(null)
@@ -153,6 +194,8 @@ export default function MapPage() {
     )
   }
 
+  const selectedService = services.find((service) => service.service_id === selectedId) ?? null
+
   return (
     <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
       <div className="flex flex-wrap items-end justify-between gap-3">
@@ -168,6 +211,12 @@ export default function MapPage() {
           Back to services overview
         </Link>
       </div>
+
+      {initial.notice ? (
+        <p className="mt-4 rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          {initial.notice}
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit} className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -256,11 +305,7 @@ export default function MapPage() {
           {status === 'error' ? (
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
               <p>Unable to load nearby services. Please try again.</p>
-              <button
-                type="button"
-                onClick={() => void runSearch(applied)}
-                className="mt-2 font-semibold underline"
-              >
+              <button type="button" onClick={() => void runSearch(applied)} className="mt-2 font-semibold underline">
                 Try again
               </button>
             </div>
@@ -294,8 +339,12 @@ export default function MapPage() {
                           {formatLabel(service.service_type)} · {service.distance_km} km
                         </p>
                         <p className="mt-1 text-xs text-slate-600">{locationLine(service)}</p>
-                        <p className={`mt-1 text-xs font-semibold ${service.is_verified ? 'text-emerald-700' : 'text-slate-500'}`}>
-                          {service.is_verified ? 'Verified' : 'Not verified'}
+                        <p
+                          className={`mt-1 text-xs font-semibold ${
+                            service.is_verified ? 'text-emerald-700' : isDemoOrganization(service) ? 'text-amber-700' : 'text-slate-500'
+                          }`}
+                        >
+                          {verificationLabel(service)}
                         </p>
                       </button>
                     </li>
@@ -317,6 +366,43 @@ export default function MapPage() {
           />
         </section>
       </div>
+
+      {selectedService ? (
+        <section aria-label="Service details" className="mt-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h2 className="text-xl font-bold text-slate-900">{selectedService.service_name}</h2>
+              <p className="mt-1 text-sm text-slate-600">{selectedService.organization_name}</p>
+            </div>
+            <span
+              className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                selectedService.is_verified ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+              }`}
+            >
+              {verificationLabel(selectedService)}
+            </span>
+          </div>
+
+          {isDemoOrganization(selectedService) ? (
+            <p className="mt-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900">
+              This is a fictional DEMO record used to demonstrate the platform. It is not a real institution.
+            </p>
+          ) : null}
+
+          <dl className="mt-4 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <Detail label="Service type" value={formatLabel(selectedService.service_type)} />
+            <Detail label="Distance" value={`${selectedService.distance_km} km`} />
+            <Detail label="Organization type" value={formatLabel(selectedService.organization_type)} />
+            <Detail label="Service description" value={selectedService.service_description} />
+            <Detail label="Eligibility" value={selectedService.eligibility} />
+            <Detail label="About the organization" value={selectedService.description} />
+            <Detail label="Address" value={selectedService.address} />
+            <Detail label="District / Taluka" value={[selectedService.district, selectedService.taluka].filter(Boolean).join(' / ')} />
+            <Detail label="City or village" value={selectedService.city_or_village} />
+            <Detail label="Contact" value={selectedService.contact_information} />
+          </dl>
+        </section>
+      ) : null}
     </div>
   )
 }

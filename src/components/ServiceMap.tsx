@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { Circle, CircleMarker, MapContainer, Marker, Popup, TileLayer, Tooltip, useMap } from 'react-leaflet'
 import { divIcon, latLng, type Marker as LeafletMarker } from 'leaflet'
 import 'leaflet/dist/leaflet.css'
-import { formatLabel, type NearbyService } from '../api/services'
+import { formatLabel, verificationLabel, type NearbyService } from '../api/services'
 
 type Props = {
   center: { latitude: number; longitude: number }
@@ -100,8 +100,8 @@ export function ServiceMap({ center, radiusKm, services, selectedId, onSelect, c
               <p className="text-slate-600">
                 {[service.city_or_village, service.taluka, service.district].filter(Boolean).join(', ') || 'Location not listed'}
               </p>
-              <p className={service.is_verified ? 'font-semibold text-emerald-700' : 'text-slate-500'}>
-                {service.is_verified ? 'Verified' : 'Not verified'}
+                 <p className={service.is_verified ? 'font-semibold text-emerald-700' : 'font-semibold text-amber-700'}>
+                      {verificationLabel(service)}
               </p>
               {service.contact_information ? <p className="text-slate-600">{service.contact_information}</p> : null}
             </div>

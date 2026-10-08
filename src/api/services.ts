@@ -5,6 +5,7 @@ export const DISCOVERY_SERVICE_TYPES = [
   'HEALTHCARE',
   'NUTRITION',
   'PROTECTION',
+  'CHILD_SUPPORT',
   'WELLBEING',
   'INCLUSION',
   'GOVERNMENT_SCHEME',
@@ -69,4 +70,50 @@ export function formatLabel(value: string) {
     .replace(/_/g, ' ')
     .toLowerCase()
     .replace(/(^|\s)\w/g, (char) => char.toUpperCase())
+}
+
+// ---- Continuity -> discovery mapping -------------------------------------------------------
+// Mirror of backend/app/services/discovery_mapping.py (the backend copy is the tested one).
+// This only chooses WHICH kind of public service to look for. Part 3 decides status and
+// action_required; nothing about continuity is calculated here.
+const CONTINUITY_TO_DISCOVERY: Record<string, DiscoveryServiceType> = {
+  EDUCATION: 'EDUCATION',
+  HEALTHCARE: 'HEALTHCARE',
+  NUTRITION: 'NUTRITION',
+  PROTECTION: 'CHILD_SUPPORT',
+  WELLBEING: 'WELLBEING',
+  INCLUSION: 'INCLUSION',
+  GOVERNMENT_SCHEME: 'GOVERNMENT_SCHEME',
+  SOCIAL_SUPPORT: 'SOCIAL_SUPPORT',
+  DOCUMENTATION: 'DOCUMENTATION',
+  HOUSING_SUPPORT: 'HOUSING_SUPPORT',
+}
+
+const DISCOVERY_ACTION_STATUSES = ['PENDING', 'FOLLOW_UP_RECOMMENDED', 'REVIEW_REQUIRED', 'NOT_AVAILABLE']
+
+export function discoveryServiceType(continuityServiceType: string): DiscoveryServiceType | null {
+  return CONTINUITY_TO_DISCOVERY[(continuityServiceType || '').toUpperCase()] ?? null
+}
+
+export function needsDiscoveryAction(status: string, actionRequired?: boolean | null) {
+  return Boolean(actionRequired) || DISCOVERY_ACTION_STATUSES.includes((status || '').toUpperCase())
+}
+
+/** Map URL carrying only a service type and an optional place name. No child or family data. */
+export function discoveryPath(continuityServiceType: string, place?: string | null) {
+  const target = discoveryServiceType(continuityServiceType)
+  if (!target) return '/map'
+  const params = new URLSearchParams({ service_type: target })
+  if (place) params.set('place', place)
+  return `/map?${params.toString()}`
+}
+
+// ---- DEMO labelling -----------------------------------------------------------------------
+export function isDemoOrganization(service: Pick<NearbyService, 'organization_name'>) {
+  return /\bDEMO\b/.test(service.organization_name)
+}
+
+export function verificationLabel(service: Pick<NearbyService, 'organization_name' | 'is_verified'>) {
+  const status = service.is_verified ? 'Verified' : 'Not verified'
+  return isDemoOrganization(service) ? `DEMO — ${status}` : status
 }
