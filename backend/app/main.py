@@ -6,6 +6,7 @@ from app.api.routes.children import router as children_router
 from app.api.routes.continuity import router as continuity_router
 from app.api.routes.families import router as families_router
 from app.api.routes.directory import router as directory_router
+from app.api.routes.nearby import router as nearby_router
 from app.api.routes.followups import router as followups_router
 from app.api.routes.health import router as health_router
 from app.api.routes.migrations import router as migrations_router
@@ -39,6 +40,7 @@ app.include_router(service_records_router, prefix='/api/v1')
 app.include_router(continuity_router, prefix='/api/v1')
 app.include_router(followups_router, prefix='/api/v1')
 app.include_router(directory_router, prefix='/api/v1')
+app.include_router(nearby_router, prefix='/api/v1')
 
 
 @app.get('/')
