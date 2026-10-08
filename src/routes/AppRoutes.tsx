@@ -8,6 +8,7 @@ import HelpPage from '../pages/HelpPage'
 import Home from '../pages/Home'
 import HowItWorks from '../pages/HowItWorks'
 import Login from '../pages/Login'
+import MapPage from '../pages/MapPage'
 import NotFound from '../pages/NotFound'
 import Register from '../pages/Register'
 import RoleSelection from '../pages/RoleSelection'
@@ -24,6 +25,7 @@ export function AppRoutes() {
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/services" element={<ServicesPage />} />
+          <Route path="/map" element={<ProtectedRoute><MapPage /></ProtectedRoute>} />
           <Route path="/how-it-works" element={<HowItWorks />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />

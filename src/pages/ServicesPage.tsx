@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom'
 import { SectionHeader } from '../components/common/SectionHeader'
 import { serviceGroups } from '../data/mockData'
 
@@ -9,6 +10,15 @@ export default function ServicesPage() {
         title="A continuity-focused service model for children and families"
         description="The platform helps maintain continuity across child welfare, public support, and coordination services as families move within a state."
       />
+
+      <div className="mt-6">
+        <Link
+          to="/map"
+          className="inline-flex items-center rounded-lg bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800"
+        >
+          View Map
+        </Link>
+      </div>
 
       <div className="mt-10 space-y-12">
         {serviceGroups.map((group) => (
