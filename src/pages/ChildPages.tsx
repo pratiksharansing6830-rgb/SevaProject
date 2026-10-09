@@ -1,9 +1,9 @@
-import { FindNearbyAction } from '../components/FindNearbyAction'
 import { useEffect, useState, type FormEvent } from 'react'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { ArrowLeft, Check, Circle, TriangleAlert } from 'lucide-react'
 import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/common/Button'
+import { FindNearbyAction } from '../components/FindNearbyAction'
 import {
   checkContinuity,
   getChild,
@@ -11,6 +11,7 @@ import {
   getFamily,
   getServiceRecord,
   listFollowups,
+  listMigrations,
   saveServiceRecord,
   updateFollowup,
   type Child,
@@ -156,6 +157,28 @@ export function ContinuityPage() {
     return () => { active = false }
   }, [childId, token])
 
+  // Destination place names (city / taluka / district) used only to pick a map search point.
+  const [destination, setDestination] = useState<string[]>([])
+  const familyId = child?.family_id
+  useEffect(() => {
+    if (!token || !familyId) return
+    let active = true
+    void listMigrations(familyId, token)
+      .then((items) => {
+        if (!active) return
+        const current = [...items].sort(
+          (a, b) =>
+            (a.status === 'ACTIVE' ? 0 : 1) - (b.status === 'ACTIVE' ? 0 : 1) ||
+            b.migration_date.localeCompare(a.migration_date),
+        )[0]
+        setDestination(current ? [current.to_location, current.to_taluka, current.to_district] : [])
+      })
+      .catch(() => {
+        if (active) setDestination([])
+      })
+    return () => { active = false }
+  }, [familyId, token])
+
   async function refreshData() {
     if (!token) return
     const data = await fetchContinuityPageData(childId, token)
@@ -193,6 +216,14 @@ export function ContinuityPage() {
             <div className="flex items-center gap-4"><span className="text-sm text-slate-600">{statusText[record?.status || 'PENDING']}</span><Link to={`/children/${child.id}/${service.slug}`} className="text-sm font-semibold text-teal-800 hover:underline">Update</Link></div>
           </div>
           {record?.reason && <p className="text-sm text-slate-600">{record.reason}</p>}
+          <div>
+            <FindNearbyAction
+              serviceType={service.type}
+              status={record?.status || 'PENDING'}
+              actionRequired={record?.action_required}
+              placeCandidates={destination}
+            />
+          </div>
         </div>
       })}</div>
       <p className="mt-4 text-sm text-slate-600">{activeFollowups.length} services require follow-up.</p>
