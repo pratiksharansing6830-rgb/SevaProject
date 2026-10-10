@@ -245,7 +245,7 @@ class InclusionRecord(TimestampMixin, Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     child_id: Mapped[uuid.UUID] = mapped_column(ForeignKey('children.id', ondelete='RESTRICT'), nullable=False)
-    requirement_present: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    requirement_present: Mapped[bool | None] = mapped_column(Boolean)
     support_type: Mapped[str] = mapped_column(String(30), nullable=False, default='OTHER')
     support_status: Mapped[str] = mapped_column(String(30), nullable=False, default='PENDING')
     notes: Mapped[str | None] = mapped_column(Text)
@@ -257,7 +257,21 @@ class ServiceContinuityRecord(TimestampMixin, Base):
     __tablename__ = 'service_continuity_records'
     __table_args__ = (
         CheckConstraint("service_type IN ('EDUCATION', 'HEALTHCARE', 'NUTRITION', 'PROTECTION', 'WELLBEING', 'INCLUSION')", name='ck_continuity_service_type'),
-        CheckConstraint("status IN ('CONNECTED', 'PENDING', 'FOLLOW_UP_RECOMMENDED', 'NOT_AVAILABLE', 'REVIEW_REQUIRED')", name='ck_continuity_status'),
+        CheckConstraint("status IN ('CONNECTED', 'PENDING', 'FOLLOW_UP_REQUIRED', 'SUPPORT_NOT_REQUIRED', 'REVIEW_REQUIRED')", name='ck_continuity_status'),
+        CheckConstraint(
+            "confirmation_method IS NULL OR confirmation_method IN "
+            "('FAMILY_REPORT', 'SERVICE_PROVIDER', 'DOCUMENT_REVIEW', 'IN_PERSON', 'OTHER')",
+            name='ck_continuity_confirmation_method',
+        ),
+        CheckConstraint(
+            "(status IN ('CONNECTED', 'SUPPORT_NOT_REQUIRED') "
+            "AND outcome_confirmed_by_user_id IS NOT NULL "
+            "AND outcome_confirmed_at IS NOT NULL AND confirmation_method IS NOT NULL) "
+            "OR (status NOT IN ('CONNECTED', 'SUPPORT_NOT_REQUIRED') "
+            "AND outcome_confirmed_by_user_id IS NULL AND outcome_confirmed_at IS NULL "
+            "AND confirmation_method IS NULL AND supporting_reference IS NULL)",
+            name='ck_continuity_outcome_evidence',
+        ),
         Index('ix_continuity_child_migration', 'child_id', 'migration_id'),
     )
 
@@ -271,9 +285,14 @@ class ServiceContinuityRecord(TimestampMixin, Base):
     assigned_role: Mapped[str | None] = mapped_column(String(30))
     due_date: Mapped[date | None] = mapped_column(Date)
     notes: Mapped[str | None] = mapped_column(Text)
+    outcome_confirmed_by_user_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey('users.id', ondelete='RESTRICT'))
+    outcome_confirmed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    confirmation_method: Mapped[str | None] = mapped_column(String(30))
+    supporting_reference: Mapped[str | None] = mapped_column(String(200))
 
     child = relationship('Child', back_populates='continuity_records')
     migration = relationship('MigrationRecord', back_populates='continuity_records')
+    outcome_confirmed_by = relationship('User')
     followups = relationship('FollowUpAction', back_populates='service_continuity', passive_deletes=True)
 
 

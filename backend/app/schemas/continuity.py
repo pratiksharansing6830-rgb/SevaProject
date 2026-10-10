@@ -2,13 +2,14 @@ from datetime import date, datetime
 from typing import Literal
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 EnrollmentStatus = Literal['ENROLLED', 'PENDING', 'NOT_ENROLLED', 'UNKNOWN']
 TransferStatus = Literal['COMPLETED', 'PENDING', 'NOT_STARTED', 'NOT_REQUIRED']
 ServiceStatus = Literal['CONNECTED', 'PENDING', 'FOLLOW_UP_RECOMMENDED', 'NOT_AVAILABLE']
 ProtectionStatus = Literal['NO_ACTION_RECORDED', 'FOLLOW_UP_RECOMMENDED', 'SUPPORT_CONNECTED', 'REVIEW_REQUIRED']
-ContinuityStatus = Literal['CONNECTED', 'PENDING', 'FOLLOW_UP_RECOMMENDED', 'NOT_AVAILABLE', 'REVIEW_REQUIRED']
+ContinuityStatus = Literal['CONNECTED', 'PENDING', 'FOLLOW_UP_REQUIRED', 'SUPPORT_NOT_REQUIRED', 'REVIEW_REQUIRED']
+ConfirmationMethod = Literal['FAMILY_REPORT', 'SERVICE_PROVIDER', 'DOCUMENT_REVIEW', 'IN_PERSON', 'OTHER']
 ServiceType = Literal['EDUCATION', 'HEALTHCARE', 'NUTRITION', 'PROTECTION', 'WELLBEING', 'INCLUSION']
 
 
@@ -101,7 +102,7 @@ class MigrationCreate(BaseModel):
     to_location: str = Field(min_length=1, max_length=120)
     migration_date: date
     migration_reason: str | None = Field(default=None, max_length=300)
-    status: Literal['PLANNED', 'ACTIVE', 'COMPLETED'] = 'ACTIVE'
+    status: Literal['PLANNED', 'ACTIVE'] = 'ACTIVE'
 
 
 class MigrationUpdate(BaseModel):
@@ -265,7 +266,7 @@ class ProtectionOut(ORMModel):
 
 
 class InclusionCreate(BaseModel):
-    requirement_present: bool = False
+    requirement_present: bool | None = None
     support_type: Literal['ACCESSIBILITY', 'LEARNING_SUPPORT', 'MOBILITY_SUPPORT', 'COMMUNICATION_SUPPORT', 'OTHER'] = 'OTHER'
     support_status: ServiceStatus = 'PENDING'
     notes: str | None = Field(default=None, max_length=2000)
@@ -278,7 +279,7 @@ class InclusionUpdate(InclusionCreate):
 class InclusionOut(ORMModel):
     id: UUID
     child_id: UUID
-    requirement_present: bool
+    requirement_present: bool | None
     support_type: str
     support_status: str
     notes: str | None
@@ -288,10 +289,23 @@ class InclusionOut(ORMModel):
 
 class ContinuityUpdate(BaseModel):
     status: ContinuityStatus
-    action_required: bool
-    assigned_role: Literal['CITIZEN', 'SCHOOL', 'HEALTHCARE', 'NGO_WORKER', 'GOVERNMENT', 'ADMIN'] | None = None
+    confirmation_method: ConfirmationMethod | None = None
+    supporting_reference: str | None = Field(
+        default=None,
+        max_length=200,
+        description='Short, non-sensitive reference identifier only; do not include personal or case details.',
+    )
     due_date: date | None = None
     notes: str | None = Field(default=None, max_length=2000)
+
+    @model_validator(mode='after')
+    def validate_outcome_confirmation(self):
+        terminal_status = self.status in ('CONNECTED', 'SUPPORT_NOT_REQUIRED')
+        if terminal_status and self.confirmation_method is None:
+            raise ValueError('A confirmation method is required for a confirmed outcome.')
+        if not terminal_status and (self.confirmation_method is not None or self.supporting_reference is not None):
+            raise ValueError('Confirmation details are only accepted for a confirmed outcome.')
+        return self
 
 
 class ServiceContinuityOut(ORMModel):
@@ -305,12 +319,16 @@ class ServiceContinuityOut(ORMModel):
     assigned_role: str | None
     due_date: date | None
     notes: str | None
+    outcome_confirmed_by_user_id: UUID | None
+    outcome_confirmed_at: datetime | None
+    confirmation_method: ConfirmationMethod | None
+    supporting_reference: str | None
 
 
 class ContinuitySummary(BaseModel):
     child_id: UUID
     child_name: str
-    overall_status: Literal['CONNECTED', 'FOLLOW_UP_RECOMMENDED', 'REVIEW_REQUIRED']
+    overall_status: Literal['CONNECTED', 'SUPPORT_NOT_REQUIRED', 'FOLLOW_UP_REQUIRED', 'REVIEW_REQUIRED']
     services: list[ServiceContinuityOut]
     follow_up_count: int
 

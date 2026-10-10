@@ -10,7 +10,7 @@ type Props = {
   status: string
   /** Part 3 action_required flag */
   actionRequired?: boolean | null
-  /** Place names for the current destination, most specific first. Only a city/district name is used. */
+  /** Current migration destination names, most specific first. Never pass family or child details. */
   placeCandidates?: Array<string | null | undefined>
 }
 

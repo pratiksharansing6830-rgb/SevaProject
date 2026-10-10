@@ -81,7 +81,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       try {
         const response = await loginUser(payload.identifier, payload.password)
         persistSession(response.access_token, response.user)
-        navigate('/dashboard')
+        const destination = response.user.role === 'GOVERNMENT' || response.user.role === 'ADMIN'
+          ? '/government/dashboard'
+          : response.user.role === 'SCHOOL' || response.user.role === 'HEALTHCARE'
+            ? '/map'
+            : '/dashboard'
+        navigate(destination)
       } finally {
         setIsLoading(false)
       }

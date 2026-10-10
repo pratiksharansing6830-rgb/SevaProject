@@ -31,15 +31,21 @@ def create_followup(
     db: Session = Depends(get_db),
 ) -> FollowUpAction:
     ensure_family_access(db, current_user, family_id, ALLOWED)
-    if payload.child_id:
-        child = db.get(Child, payload.child_id)
-        if child is None or child.family_id != family_id:
-            raise HTTPException(status_code=404, detail='Child not found in this family.')
+    child = db.get(Child, payload.child_id) if payload.child_id else None
+    if payload.child_id and (child is None or child.family_id != family_id):
+        raise HTTPException(status_code=404, detail='Child not found in this family.')
+    continuity = None
     if payload.service_continuity_id:
         continuity = db.get(ServiceContinuityRecord, payload.service_continuity_id)
         if continuity is None or continuity.child.family_id != family_id:
             raise HTTPException(status_code=404, detail='Continuity record not found in this family.')
+        if child is not None and continuity.child_id != child.id:
+            raise HTTPException(status_code=400, detail='Follow-up child and continuity record must match.')
+        if child is None:
+            child = continuity.child
     followup = FollowUpAction(family_id=family_id, **payload.model_dump())
+    if child is not None:
+        followup.child_id = child.id
     db.add(followup)
     db.commit()
     db.refresh(followup)

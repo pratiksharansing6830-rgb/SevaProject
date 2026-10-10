@@ -40,3 +40,6 @@ backend/.env
 *.njsproj
 *.sln
 *.sw?
+NUL
+*.db
+backend/.env

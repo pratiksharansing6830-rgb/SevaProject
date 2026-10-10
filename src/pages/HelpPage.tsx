@@ -1,4 +1,6 @@
-import { CircleHelp, Mail, Phone } from 'lucide-react'
+import { CircleHelp } from 'lucide-react'
+import { Link } from 'react-router-dom'
+import { Button } from '../components/common/Button'
 import { SectionHeader } from '../components/common/SectionHeader'
 
 const helpCards = [
@@ -22,7 +24,7 @@ export default function HelpPage() {
       <SectionHeader
         eyebrow="Help and support"
         title="Support resources for families and organizations"
-        description="This help center is a static frontend preview and can be expanded with real guidance and service information in future phases."
+        description="Use the signed-in family workflow to review service needs, record provider contacts, and track follow-ups."
       />
 
       <div className="mt-10 grid gap-5 md:grid-cols-3">
@@ -41,17 +43,11 @@ export default function HelpPage() {
         <div>
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-slate-500">Contact details</p>
           <h3 className="mt-3 text-3xl font-bold text-slate-900">Still need assistance?</h3>
-          <p className="mt-4 text-base text-slate-600">This contact panel is a placeholder for future service support channels and public information workflows.</p>
+          <p className="mt-4 text-base text-slate-600">No central support contact is configured. For service availability or eligibility, confirm directly with the provider listed in the service directory.</p>
+          <Button to="/login" className="mt-5">Sign in to manage family support</Button>
         </div>
-        <div className="space-y-4 text-sm text-slate-700">
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <Mail className="h-5 w-5 text-emerald-700" aria-hidden="true" />
-            <span>support@sahaayak.example</span>
-          </div>
-          <div className="flex items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 p-4">
-            <Phone className="h-5 w-5 text-emerald-700" aria-hidden="true" />
-            <span>+91 98765 43210</span>
-          </div>
+        <div className="flex items-center">
+          <Link to="/services" className="text-sm font-semibold text-emerald-700 hover:underline">Review available workflow services</Link>
         </div>
       </div>
     </div>

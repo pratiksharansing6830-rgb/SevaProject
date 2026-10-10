@@ -9,9 +9,14 @@ export function ProtectedRoute({
   allowedRoles?: string[]
 }) {
   const { user, isAuthenticated, isLoading } = useAuth()
+  const dashboard = user?.role === 'GOVERNMENT' || user?.role === 'ADMIN'
+    ? '/government/dashboard'
+    : user?.role === 'SCHOOL' || user?.role === 'HEALTHCARE'
+      ? '/map'
+      : '/dashboard'
 
   if (isLoading) {
-    return <div className="flex min-h-[60vh] items-center justify-center text-sm font-medium text-slate-600">Loading your session…</div>
+    return <div role="status" aria-live="polite" className="flex min-h-[60vh] items-center justify-center text-sm font-medium text-slate-600">Loading your session…</div>
   }
 
   if (!isAuthenticated || !user) {
@@ -19,7 +24,7 @@ export function ProtectedRoute({
   }
 
   if (allowedRoles && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/dashboard" replace />
+    return <Navigate to={dashboard} replace />
   }
 
   return <>{children}</>

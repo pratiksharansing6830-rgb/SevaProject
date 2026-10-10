@@ -1,8 +1,14 @@
+import os
+import secrets
+
 import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
+
+os.environ.setdefault('SECRET_KEY', secrets.token_urlsafe(48))
+os.environ.setdefault('DATABASE_URL', 'sqlite://')
 
 from app.api.deps import get_db
 from app.db.database import Base

@@ -1,6 +1,6 @@
 import { AlertTriangle, CheckCircle2 } from 'lucide-react'
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useAuth } from '../auth/AuthContext'
 import { Button } from '../components/common/Button'
 import { languages } from '../data/mockData'
@@ -15,10 +15,16 @@ const accountRoleMap = {
 export default function Register() {
   const { register } = useAuth()
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState('')
+  const requestedRole = searchParams.get('role')
+  const initialAccountType = requestedRole === 'SCHOOL' ? 'School'
+    : requestedRole === 'HEALTHCARE' ? 'Healthcare Worker'
+      : requestedRole === 'NGO_WORKER' ? 'NGO / Social Worker'
+        : 'Parent / Guardian'
   const [form, setForm] = useState({
-    accountType: 'Parent / Guardian',
+    accountType: initialAccountType,
     full_name: '',
     mobile_number: '',
     email: '',
@@ -88,6 +94,10 @@ export default function Register() {
               <input
                 id="full-name"
                 type="text"
+                autoComplete="name"
+                required
+                minLength={2}
+                maxLength={120}
                 value={form.full_name}
                 onChange={(event) => setForm((current) => ({ ...current, full_name: event.target.value }))}
                 placeholder="Enter your full name"
@@ -99,6 +109,10 @@ export default function Register() {
               <input
                 id="mobile-number"
                 type="tel"
+                autoComplete="tel"
+                required
+                minLength={8}
+                maxLength={20}
                 value={form.mobile_number}
                 onChange={(event) => setForm((current) => ({ ...current, mobile_number: event.target.value }))}
                 placeholder="+91 98765 43210"
@@ -113,6 +127,9 @@ export default function Register() {
               <input
                 id="email"
                 type="email"
+                autoComplete="email"
+                required
+                maxLength={255}
                 value={form.email}
                 onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
                 placeholder="name@example.com"
@@ -140,6 +157,9 @@ export default function Register() {
               <input
                 id="password"
                 type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
                 value={form.password}
                 onChange={(event) => setForm((current) => ({ ...current, password: event.target.value }))}
                 placeholder="Create a password"
@@ -151,6 +171,9 @@ export default function Register() {
               <input
                 id="confirm-password"
                 type="password"
+                autoComplete="new-password"
+                required
+                minLength={8}
                 value={form.confirm_password}
                 onChange={(event) => setForm((current) => ({ ...current, confirm_password: event.target.value }))}
                 placeholder="Re-enter your password"
@@ -162,6 +185,7 @@ export default function Register() {
           <label className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
             <input
               type="checkbox"
+              required
               checked={form.agree}
               onChange={(event) => setForm((current) => ({ ...current, agree: event.target.checked }))}
               className="mt-1 h-4 w-4 rounded border-slate-300 text-emerald-600"
@@ -170,11 +194,11 @@ export default function Register() {
           </label>
 
           {error ? (
-            <div className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
+            <div role="alert" aria-live="assertive" className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">{error}</div>
           ) : null}
 
           <div className="flex flex-col gap-3 sm:flex-row">
-            <Button type="submit" className="justify-center" disabled={isSubmitting}>
+            <Button type="submit" className="justify-center" disabled={isSubmitting} aria-busy={isSubmitting}>
               {isSubmitting ? 'Creating account…' : 'Create Account'}
             </Button>
             <Button variant="outline" to="/login" className="justify-center">Back to Login</Button>

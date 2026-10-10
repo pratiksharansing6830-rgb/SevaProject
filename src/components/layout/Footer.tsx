@@ -8,20 +8,12 @@ const platformLinks = [
 
 const supportLinks = [
   { label: 'Help', to: '/help' },
-  { label: 'Contact', to: '/help' },
-  { label: 'Accessibility', to: '/help' },
 ]
 
 const organizationLinks = [
   { label: 'Schools', to: '/services' },
   { label: 'NGOs', to: '/services' },
   { label: 'Healthcare', to: '/services' },
-]
-
-const legalLinks = [
-  { label: 'Privacy', to: '/help' },
-  { label: 'Terms', to: '/help' },
-  { label: 'Data Protection', to: '/help' },
 ]
 
 export function Footer() {
@@ -33,7 +25,7 @@ export function Footer() {
             Sahaayak
           </Link>
           <p className="mt-4 max-w-md text-sm leading-6 text-slate-300">
-            A prototype platform for academic and demonstration purposes, designed to help children maintain continuity of support during intra-state migration.
+            A proof of concept for recording family support needs and coordinating continuity during migration. Directory listings do not confirm provider availability or service outcomes.
           </p>
         </div>
 
@@ -76,23 +68,6 @@ export function Footer() {
           </ul>
         </div>
 
-        <div>
-          <h3 className="text-sm font-semibold uppercase tracking-[0.2em] text-slate-400">Legal</h3>
-          <ul className="mt-4 space-y-3 text-sm text-slate-300">
-            {legalLinks.map((link) => (
-              <li key={link.label}>
-                <Link to={link.to} className="hover:text-white">
-                  {link.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </div>
-      </div>
-      <div className="border-t border-slate-800">
-        <div className="mx-auto max-w-7xl px-4 py-6 text-sm text-slate-400 sm:px-6 lg:px-8">
-          Prototype platform for academic and demonstration purposes.
-        </div>
       </div>
     </footer>
   )

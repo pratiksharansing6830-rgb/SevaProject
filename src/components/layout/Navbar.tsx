@@ -7,7 +7,11 @@ import { Button } from '../common/Button'
 
 export function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false)
-  const { isAuthenticated, logout } = useAuth()
+  const { isAuthenticated, user, logout } = useAuth()
+  const planningRole = user?.role === 'GOVERNMENT' || user?.role === 'ADMIN'
+  const familyRole = user?.role === 'CITIZEN' || user?.role === 'NGO_WORKER' || user?.role === 'ADMIN'
+  const dashboardPath = planningRole ? '/government/dashboard' : familyRole ? '/dashboard' : '/map'
+  const dashboardLabel = planningRole ? 'Planning dashboard' : familyRole ? 'Dashboard' : 'Service directory'
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-sm">
@@ -42,8 +46,10 @@ export function Navbar() {
         <div className="hidden items-center gap-3 lg:flex">
           {isAuthenticated ? (
             <>
-              <Button variant="outline" to="/family">Family</Button>
-              <Button variant="outline" to="/dashboard">Dashboard</Button>
+              {familyRole && <Button variant="outline" to="/family">Family</Button>}
+              <Button variant="outline" to={dashboardPath}>
+                {dashboardLabel}
+              </Button>
               <Button variant="ghost" onClick={logout}>Logout</Button>
             </>
           ) : (
@@ -81,14 +87,16 @@ export function Navbar() {
                 {item.label}
               </NavLink>
             ))}
-            <div className={`mt-3 grid ${isAuthenticated ? 'grid-cols-3' : 'grid-cols-2'} gap-2 pt-2`}>
+            <div className={`mt-3 grid ${isAuthenticated ? (familyRole ? 'grid-cols-3' : 'grid-cols-2') : 'grid-cols-2'} gap-2 pt-2`}>
               {isAuthenticated ? (
                 <>
-                  <Button variant="outline" to="/family" className="w-full" onClick={() => setMenuOpen(false)}>
-                    Family
-                  </Button>
-                  <Button variant="outline" to="/dashboard" className="w-full" onClick={() => setMenuOpen(false)}>
-                    Dashboard
+                  {familyRole && (
+                    <Button variant="outline" to="/family" className="w-full" onClick={() => setMenuOpen(false)}>
+                      Family
+                    </Button>
+                  )}
+                  <Button variant="outline" to={dashboardPath} className="w-full" onClick={() => setMenuOpen(false)}>
+                    {planningRole ? 'Planning' : familyRole ? 'Dashboard' : 'Directory'}
                   </Button>
                   <Button className="w-full" onClick={() => {
                     setMenuOpen(false)

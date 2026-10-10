@@ -27,37 +27,3 @@ export type UserGroup = {
   description: string
   icon: LucideIcon
 }
-
-export type ContinuityStatus = 'connected' | 'review' | 'supported' | 'available'
-
-export type ContinuityItem = {
-  label: string
-  status: ContinuityStatus
-}
-
-export type RoleOption = {
-  title: string
-  description: string
-  icon: LucideIcon
-}
-
-export type AiCard = {
-  title: string
-  description: string
-  icon: LucideIcon
-}
-
-export type MapPoint = {
-  title: string
-  category: string
-  position: string
-}
-
-export type FamilyRecord = {
-  id: string
-  childName: string
-  age: number
-  className: string
-  previousLocation: string
-  currentLocation: string
-}

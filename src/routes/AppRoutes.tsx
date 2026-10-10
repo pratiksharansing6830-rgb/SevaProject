@@ -15,6 +15,7 @@ import RoleSelection from '../pages/RoleSelection'
 import ServicesPage from '../pages/ServicesPage'
 import { AddChildPage, FamilyCreatePage, FamilyDashboard, FamilyDetailPage, MigrationPage } from '../pages/FamilyPages'
 import { ChildProfilePage, ChildServicePage, ContinuityPage } from '../pages/ChildPages'
+import GovernmentDashboard from '../pages/GovernmentDashboard'
 
 export function AppRoutes() {
   return (
@@ -30,15 +31,16 @@ export function AppRoutes() {
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/role-selection" element={<RoleSelection />} />
-          <Route path="/dashboard" element={<ProtectedRoute><CitizenDashboard /></ProtectedRoute>} />
-          <Route path="/family" element={<ProtectedRoute><FamilyDashboard /></ProtectedRoute>} />
-          <Route path="/family/create" element={<ProtectedRoute><FamilyCreatePage /></ProtectedRoute>} />
-          <Route path="/family/:familyId" element={<ProtectedRoute><FamilyDetailPage /></ProtectedRoute>} />
-          <Route path="/family/:familyId/children" element={<ProtectedRoute><AddChildPage /></ProtectedRoute>} />
-          <Route path="/children/:childId" element={<ProtectedRoute><ChildProfilePage /></ProtectedRoute>} />
-          <Route path="/children/:childId/continuity" element={<ProtectedRoute><ContinuityPage /></ProtectedRoute>} />
-          <Route path="/children/:childId/:service" element={<ProtectedRoute><ChildServicePage /></ProtectedRoute>} />
-          <Route path="/migration" element={<ProtectedRoute><MigrationPage /></ProtectedRoute>} />
+          <Route path="/dashboard" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><CitizenDashboard /></ProtectedRoute>} />
+          <Route path="/government/dashboard" element={<ProtectedRoute allowedRoles={['GOVERNMENT', 'ADMIN']}><GovernmentDashboard /></ProtectedRoute>} />
+          <Route path="/family" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><FamilyDashboard /></ProtectedRoute>} />
+          <Route path="/family/create" element={<ProtectedRoute allowedRoles={['CITIZEN', 'ADMIN']}><FamilyCreatePage /></ProtectedRoute>} />
+          <Route path="/family/:familyId" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><FamilyDetailPage /></ProtectedRoute>} />
+          <Route path="/family/:familyId/children" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><AddChildPage /></ProtectedRoute>} />
+          <Route path="/children/:childId" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><ChildProfilePage /></ProtectedRoute>} />
+          <Route path="/children/:childId/continuity" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><ContinuityPage /></ProtectedRoute>} />
+          <Route path="/children/:childId/:service" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><ChildServicePage /></ProtectedRoute>} />
+          <Route path="/migration" element={<ProtectedRoute allowedRoles={['CITIZEN', 'NGO_WORKER', 'ADMIN']}><MigrationPage /></ProtectedRoute>} />
           <Route path="/help" element={<HelpPage />} />
           <Route path="/404" element={<NotFound />} />
           <Route path="*" element={<NotFound />} />

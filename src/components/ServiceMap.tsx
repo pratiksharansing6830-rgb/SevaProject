@@ -97,11 +97,12 @@ export function ServiceMap({ center, radiusKm, services, selectedId, onSelect, c
               <p className="text-slate-800">{service.service_name}</p>
               <p className="text-slate-600">{formatLabel(service.service_type)}</p>
               <p className="text-slate-600">{service.distance_km} km</p>
+              {service.address ? <p className="text-slate-600">{service.address}</p> : null}
               <p className="text-slate-600">
                 {[service.city_or_village, service.taluka, service.district].filter(Boolean).join(', ') || 'Location not listed'}
               </p>
-                 <p className={service.is_verified ? 'font-semibold text-emerald-700' : 'font-semibold text-amber-700'}>
-                      {verificationLabel(service)}
+              <p className={service.is_verified ? 'font-semibold text-emerald-700' : 'font-semibold text-amber-700'}>
+                {verificationLabel(service)}
               </p>
               {service.contact_information ? <p className="text-slate-600">{service.contact_information}</p> : null}
             </div>

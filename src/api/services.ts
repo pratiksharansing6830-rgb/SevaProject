@@ -89,7 +89,7 @@ const CONTINUITY_TO_DISCOVERY: Record<string, DiscoveryServiceType> = {
   HOUSING_SUPPORT: 'HOUSING_SUPPORT',
 }
 
-const DISCOVERY_ACTION_STATUSES = ['PENDING', 'FOLLOW_UP_RECOMMENDED', 'REVIEW_REQUIRED', 'NOT_AVAILABLE']
+const DISCOVERY_ACTION_STATUSES = ['PENDING', 'FOLLOW_UP_REQUIRED', 'FOLLOW_UP_RECOMMENDED', 'REVIEW_REQUIRED', 'NOT_AVAILABLE']
 
 export function discoveryServiceType(continuityServiceType: string): DiscoveryServiceType | null {
   return CONTINUITY_TO_DISCOVERY[(continuityServiceType || '').toUpperCase()] ?? null
@@ -114,6 +114,8 @@ export function isDemoOrganization(service: Pick<NearbyService, 'organization_na
 }
 
 export function verificationLabel(service: Pick<NearbyService, 'organization_name' | 'is_verified'>) {
-  const status = service.is_verified ? 'Verified' : 'Not verified'
+  const status = service.is_verified
+    ? 'Directory listing verified; availability not confirmed'
+    : 'Directory listing not verified; availability not confirmed'
   return isDemoOrganization(service) ? `DEMO — ${status}` : status
 }

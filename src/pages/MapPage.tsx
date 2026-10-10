@@ -26,14 +26,13 @@ type FormState = {
   taluka: string
 }
 
-type Status = 'loading' | 'ready' | 'error'
+type Status = 'idle' | 'loading' | 'ready' | 'error'
 
 const RADIUS_OPTIONS = [2, 5, 10, 25, 50, 100]
 
-// Plain starting point (central Pune). It is not taken from any family or child record.
 const INITIAL_FORM: FormState = {
-  latitude: '18.5204',
-  longitude: '73.8567',
+  latitude: '',
+  longitude: '',
   radius: '10',
   service_type: '',
   district: '',
@@ -70,10 +69,11 @@ function buildQuery(form: FormState): { query?: AppliedQuery; error?: string } {
   }
 }
 
-/** Reads ?service_type=...&place=... (set by the continuity "Find Nearby" buttons). */
-function initialFromParams(params: URLSearchParams): { form: FormState; notice: string } {
+/** Reads a coarse destination and service type; no family or child identifiers belong in this URL. */
+function initialFromParams(params: URLSearchParams): { form: FormState; notice: string; query: AppliedQuery | null } {
   const form: FormState = { ...INITIAL_FORM }
   let notice = ''
+  let query: AppliedQuery | null = null
 
   const typeParam = params.get('service_type')
   if (typeParam && (DISCOVERY_SERVICE_TYPES as readonly string[]).includes(typeParam)) {
@@ -86,15 +86,15 @@ function initialFromParams(params: URLSearchParams): { form: FormState; notice: 
     if (centre) {
       form.latitude = String(centre.latitude)
       form.longitude = String(centre.longitude)
-      notice = `Searching around the centre of ${centre.name}. You can change the location below.`
+      notice = `Approximate search around the town centre of ${centre.name}, based on destination area "${placeParam}". Distances are measured from this point; adjust the coordinates to refine the search.`
+      query = buildQuery(form).query ?? null
     } else {
-      notice = `We could not find a search point for "${placeParam}". Please enter a location or use your location.`
+      notice = `No supported approximate search point was found for destination "${placeParam}". No other city will be substituted. Enter coordinates or use your location.`
     }
   } else if (typeParam) {
-    notice =
-      'No destination location was available. Results are shown around a default search point. Please enter a location or use your location.'
+    notice = 'No supported destination search point was provided. Enter destination coordinates or use your location to search; no default city will be used.'
   }
-  return { form, notice }
+  return { form, notice, query }
 }
 
 function locationLine(service: NearbyService) {
@@ -115,9 +115,9 @@ export default function MapPage() {
   const [searchParams] = useSearchParams()
   const [initial] = useState(() => initialFromParams(searchParams))
   const [form, setForm] = useState<FormState>(initial.form)
-  const [applied, setApplied] = useState<AppliedQuery>(() => buildQuery(initial.form).query as AppliedQuery)
+  const [applied, setApplied] = useState<AppliedQuery | null>(initial.query)
   const [services, setServices] = useState<NearbyService[]>([])
-  const [status, setStatus] = useState<Status>('loading')
+  const [status, setStatus] = useState<Status>(initial.query ? 'loading' : 'idle')
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [formError, setFormError] = useState('')
   const [locationMessage, setLocationMessage] = useState('')
@@ -144,7 +144,7 @@ export default function MapPage() {
   )
 
   useEffect(() => {
-    void runSearch(applied)
+    if (applied) void runSearch(applied)
   }, [applied, runSearch])
 
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
@@ -203,8 +203,10 @@ export default function MapPage() {
           <p className="text-sm font-semibold uppercase tracking-wide text-emerald-700">Service discovery</p>
           <h1 className="mt-1 text-3xl font-bold tracking-tight text-slate-900">Find services near you</h1>
           <p className="mt-2 max-w-2xl text-sm text-slate-600">
-            This map shows public service locations only. Your search point is used for this search and is not saved. No
-            child or family information is shown here.
+            This map shows public service locations only. Search coordinates and filters are sent to the authenticated
+            directory for this request and are not saved. No child name, family identifier, or private case details are sent
+            or shown here. OpenStreetMap supplies map tiles and receives standard tile requests from your browser.
+            Directory verification does not confirm suitability or current availability.
           </p>
         </div>
         <Link to="/services" className="text-sm font-semibold text-emerald-700 hover:underline">
@@ -297,25 +299,33 @@ export default function MapPage() {
           </p>
         ) : null}
       </form>
+      {status === 'idle' ? (
+        <p className="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+          Choose a destination location or enter coordinates and search. No city is assumed when the destination is unknown.
+        </p>
+      ) : null}
 
       <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
         <section aria-label="Service results" className="order-2 lg:order-1">
           {status === 'loading' ? <p className="text-sm text-slate-600">Finding nearby services...</p> : null}
+          {status === 'idle' ? <p className="text-sm text-slate-600">Service results will appear here after a location is selected.</p> : null}
 
           {status === 'error' ? (
             <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
               <p>Unable to load nearby services. Please try again.</p>
-              <button type="button" onClick={() => void runSearch(applied)} className="mt-2 font-semibold underline">
+              <button type="button" onClick={() => applied && void runSearch(applied)} className="mt-2 font-semibold underline">
                 Try again
               </button>
             </div>
           ) : null}
 
           {status === 'ready' && services.length === 0 ? (
-            <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">No nearby services found.</p>
+            <p className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+              No directory listings matched this search. This does not prove that no service exists or resolve any child&apos;s need; verify locally or record another referral.
+            </p>
           ) : null}
 
-          {services.length > 0 ? (
+          {applied && services.length > 0 ? (
             <>
               <p className="mb-2 text-sm text-slate-600">
                 {services.length} {services.length === 1 ? 'service' : 'services'} within {applied.radius} km, nearest first
@@ -336,8 +346,9 @@ export default function MapPage() {
                         <p className="text-sm font-semibold text-slate-900">{service.organization_name}</p>
                         <p className="mt-1 text-sm text-slate-800">{service.service_name}</p>
                         <p className="mt-1 text-xs text-slate-600">
-                          {formatLabel(service.service_type)} · {service.distance_km} km
+                          {formatLabel(service.service_type)} · {service.distance_km} km from search point
                         </p>
+                        <p className="mt-1 text-xs text-slate-600">{service.address || 'Address not listed'}</p>
                         <p className="mt-1 text-xs text-slate-600">{locationLine(service)}</p>
                         <p
                           className={`mt-1 text-xs font-semibold ${
@@ -356,14 +367,20 @@ export default function MapPage() {
         </section>
 
         <section aria-label="Service map" className="order-1 lg:order-2">
-          <ServiceMap
-            center={{ latitude: applied.latitude, longitude: applied.longitude }}
-            radiusKm={applied.radius}
-            services={services}
-            selectedId={selectedId}
-            onSelect={setSelectedId}
-            className="h-[360px] w-full lg:h-[600px]"
-          />
+          {applied ? (
+            <ServiceMap
+              center={{ latitude: applied.latitude, longitude: applied.longitude }}
+              radiusKm={applied.radius}
+              services={services}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+              className="h-[360px] w-full lg:h-[600px]"
+            />
+          ) : (
+            <div className="flex h-[360px] items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50 text-sm text-slate-600 lg:h-[600px]">
+              A map will appear after you choose a search location.
+            </div>
+          )}
         </section>
       </div>
 
